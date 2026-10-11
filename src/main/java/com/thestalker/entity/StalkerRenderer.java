@@ -80,4 +80,3 @@ public class StalkerRenderer extends EntityRenderer<StalkerEntity> {
         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
     }
 }
-
