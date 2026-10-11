@@ -1,12 +1,10 @@
 package com.thestalker;
 
-import com.thestalker.client.StalkerConfigScreen;
 import com.thestalker.command.StalkerCommand;
 import com.thestalker.entity.StalkerEntity;
 import com.thestalker.events.StalkerEvents;
 import com.thestalker.init.ModEntities;
 import com.thestalker.init.ModSounds;
-import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
@@ -31,11 +29,6 @@ public class TheStalker {
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON,
                 StalkerConfig.SPEC, "stalker-common.toml");
-
-        ModLoadingContext.get().registerExtensionPoint(
-                ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory(
-                        (mc, parent) -> StalkerConfigScreen.create(parent)));
 
         MinecraftForge.EVENT_BUS.register(this.stalkerEvents);
         MinecraftForge.EVENT_BUS.addListener(this::onRegisterCommands);
