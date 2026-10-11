@@ -1,6 +1,6 @@
 package com.thestalker.init;
 
-import com.thestalker.StalkerMod;
+import com.thestalker.TheStalker;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraftforge.registries.DeferredRegister;
