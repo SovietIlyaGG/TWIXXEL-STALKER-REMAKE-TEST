@@ -1,4 +1,4 @@
-/package com.thestalker.command;
+package com.thestalker.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
