@@ -10,7 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 
 public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITIES =
-            DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, StalkerMod.MOD_ID);
+            DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, TheStalker.MOD_ID);
 
     public static final RegistryObject<EntityType<StalkerEntity>> STALKER =
             ENTITIES.register("stalker", () ->
