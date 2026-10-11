@@ -1,0 +1,6 @@
+{
+  "break_event_1": { "sounds": [{ "name": "stalker:break_event_1", "stream": false }] },
+  "break_event_2": { "sounds": [{ "name": "stalker:break_event_2", "stream": false }] },
+  "break_event_3": { "sounds": [{ "name": "stalker:break_event_3", "stream": false }] },
+  "break_event_4": { "sounds": [{ "name": "stalker:break_event_4", "stream": false }] }
+}
