@@ -23,6 +23,7 @@ public class StalkerRenderer extends EntityRenderer<StalkerEntity> {
     @Override
     public ResourceLocation getTextureLocation(StalkerEntity entity) {
         int index = entity.getImageIndex();
+        System.out.println("[StalkerRenderer] index = " + index);
         if (index == 0) {
             return new ResourceLocation("stalker", "textures/entity/stalkerjumpscare.png");
         }
