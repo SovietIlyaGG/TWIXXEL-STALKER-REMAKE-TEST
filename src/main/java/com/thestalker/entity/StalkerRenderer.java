@@ -62,7 +62,7 @@ public class StalkerRenderer extends EntityRenderer<StalkerEntity> {
         Matrix3f normal = poseStack.last().normal();
 
         VertexConsumer vc = bufferSource.getBuffer(
-                RenderType.entityCutout(getTextureLocation(entity)));
+                RenderType.entityTranslucent(getTextureLocation(entity)));
 
         vc.vertex(pose, -halfW, 0.0f, 0.0f).color(255, 255, 255, 255)
                 .uv(0.0f, 1.0f).overlayCoords(OverlayTexture.NO_OVERLAY)
