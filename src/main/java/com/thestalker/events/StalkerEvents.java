@@ -122,6 +122,15 @@ public class StalkerEvents {
         }
     }
 
+    // ВОТ ЭТИ ДВА МЕТОДА ТЫ ПОТЕРЯЛ, Я ИХ ВЕРНУЛ:
+    public void triggerDistantStalk(ServerPlayer player, ServerLevel level) {
+        spawnStalk(player, level, StalkerConfig.DISTANT_STALK_DISTANCE.get());
+    }
+
+    public void triggerCloseStalk(ServerPlayer player, ServerLevel level) {
+        spawnStalk(player, level, StalkerConfig.CLOSE_STALK_DISTANCE.get());
+    }
+
     public void triggerBehindScare(ServerPlayer player, ServerLevel level) {
         Vec3 look = player.getViewVector(1.0f);
         double spawnX = player.getX() - look.x;
@@ -190,12 +199,11 @@ public class StalkerEvents {
         if (stalker == null) return null;
 
         int imageIndex = level.random.nextInt(6) + 1;
-        // Проверка: Quadrupedal (5) только под землёй или в дырках
         if (imageIndex == 5) {
             boolean isUnderground = !level.canSeeSky(player.blockPosition());
             boolean isHoleNearby = checkHoleNearby(level, player.blockPosition());
             if (!isUnderground && !isHoleNearby) {
-                imageIndex = level.random.nextBoolean() ? 1 : 4; // Меняем на Bipedal или Tormentor
+                imageIndex = level.random.nextBoolean() ? 1 : 4;
             }
         }
 
