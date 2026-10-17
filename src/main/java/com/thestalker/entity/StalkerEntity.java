@@ -29,6 +29,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap; // ТУТ ДОБАВЛЕН ИМПОРТ
 
 public class StalkerEntity extends PathfinderMob {
 
@@ -134,7 +135,6 @@ public class StalkerEntity extends PathfinderMob {
                 wanderAround();
             }
 
-            // Ускорение ночью
             if (this.level().isNight()) {
                 this.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(0.35D);
             } else {
