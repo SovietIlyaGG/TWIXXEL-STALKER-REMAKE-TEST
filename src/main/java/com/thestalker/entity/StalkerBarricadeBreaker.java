@@ -10,7 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class StalkerBarricadeBreaker {
 
-    private static final int BREAK_COOLDOWN = 10; // Раз в 0.5 сек
+    private static final int BREAK_COOLDOWN = 10;
 
     private int cooldown = 0;
     private BlockPos targetDoor = null;
@@ -20,45 +20,26 @@ public class StalkerBarricadeBreaker {
         if (!(stalker.level() instanceof ServerLevel level)) return;
         if (targetDoor == null) return;
 
-        if (cooldown > 0) {
-            cooldown--;
-            return;
-        }
+        if (cooldown > 0) { cooldown--; return; }
 
         BlockState doorState = level.getBlockState(targetDoor);
-        if (!(doorState.getBlock() instanceof DoorBlock)) {
-            clearTarget();
-            return;
-        }
+        if (!(doorState.getBlock() instanceof DoorBlock)) { clearTarget(); return; }
 
-        // Ищем блок прямо перед дверью (с той стороны, откуда идет сталкер)
         Direction stalkerDir = stalker.getDirection();
         BlockPos blockInFront = targetDoor.relative(stalkerDir);
         BlockState frontState = level.getBlockState(blockInFront);
 
-        // Если перед дверью стоит блок (баррикада) — ломаем его
         if (!frontState.isAir() && !(frontState.getBlock() instanceof DoorBlock)) {
             level.destroyBlock(blockInFront, true, stalker);
-            level.playSound(null, blockInFront,
-                    ModSounds.BREAK_EVENT_2.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.9f);
+            level.playSound(null, blockInFront, ModSounds.BREAK_EVENT_2.get(), SoundSource.HOSTILE, 1.0f, 0.9f);
             cooldown = BREAK_COOLDOWN;
             return;
         }
 
-        // Блоков нет — ломаем саму дверь
         if (!doorBroken) {
-            // Стук
-            level.playSound(null, targetDoor,
-                    ModSounds.BREAK_EVENT_4.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.8f);
-            
-            // Ломание
+            level.playSound(null, targetDoor, ModSounds.BREAK_EVENT_4.get(), SoundSource.HOSTILE, 1.0f, 0.8f);
             level.destroyBlock(targetDoor, true, stalker);
-            level.playSound(null, targetDoor,
-                    ModSounds.BREAK_EVENT_3.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.9f);
-            
+            level.playSound(null, targetDoor, ModSounds.BREAK_EVENT_3.get(), SoundSource.HOSTILE, 1.0f, 0.9f);
             doorBroken = true;
             cooldown = BREAK_COOLDOWN;
         }
