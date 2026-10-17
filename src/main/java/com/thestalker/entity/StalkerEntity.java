@@ -1,5 +1,6 @@
 package com.thestalker.entity;
 
+import java.util.concurrent.ConcurrentHashMap;
 import com.thestalker.StalkerConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
