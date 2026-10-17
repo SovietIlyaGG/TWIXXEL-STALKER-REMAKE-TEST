@@ -5,6 +5,7 @@ import com.thestalker.entity.StalkerEntity;
 import com.thestalker.init.ModEntities;
 import com.thestalker.init.ModSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,13 +32,8 @@ public class StalkerEvents {
     private UUID chaseEntityUUID = null;
     private long lastBreakEventTick = Long.MIN_VALUE;
 
-    private boolean isBadWeather(ServerLevel level) {
-        return level.isThundering() || level.isRaining();
-    }
-
-    private long effectiveCooldown(long base, ServerLevel level) {
-        return isBadWeather(level) ? base / 2L : base;
-    }
+    private boolean isBadWeather(ServerLevel level) { return level.isThundering() || level.isRaining(); }
+    private long effectiveCooldown(long base, ServerLevel level) { return isBadWeather(level) ? base / 2L : base; }
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
@@ -47,15 +43,10 @@ public class StalkerEvents {
         this.lastBehindScareTick = now;
         this.lastChaseTick = now;
         this.lastBreakEventTick = now;
-        this.spawnedStalkUUID = null;
-        this.chaseEntityUUID = null;
-        this.stalkActive = false;
     }
 
     @SubscribeEvent
-    public void onServerStopping(ServerStoppingEvent event) {
-        this.serverStartTick = -1L;
-    }
+    public void onServerStopping(ServerStoppingEvent event) { this.serverStartTick = -1L; }
 
     @SubscribeEvent
     public void onServerTick(TickEvent.ServerTickEvent event) {
@@ -74,8 +65,7 @@ public class StalkerEvents {
             this.lastBreakEventTick = now;
         }
 
-        if (now - this.lastBehindScareTick >=
-                effectiveCooldown(StalkerConfig.behindScareCooldwonTicks(), overworld)) {
+        if (now - this.lastBehindScareTick >= effectiveCooldown(StalkerConfig.behindScareCooldwonTicks(), overworld)) {
             ServerPlayer target = randomPlayer(players, server);
             if (target != null) triggerBehindScare(target, getPlayerLevel(target, server));
             this.lastBehindScareTick = now;
@@ -86,8 +76,7 @@ public class StalkerEvents {
                 this.chaseEntityUUID = null;
                 this.lastChaseTick = now;
             }
-        } else if (now - this.lastChaseTick >=
-                effectiveCooldown(StalkerConfig.chaseCooldownTicks(), overworld)) {
+        } else if (now - this.lastChaseTick >= effectiveCooldown(StalkerConfig.chaseCooldownTicks(), overworld)) {
             ServerPlayer target = randomPlayer(players, server);
             if (target != null) {
                 UUID uuid = triggerChase(target, getPlayerLevel(target, server));
@@ -105,31 +94,32 @@ public class StalkerEvents {
         } else if (this.stalkActive) {
             this.stalkActive = false;
             this.lastStalkTick = now;
-        } else if (now - this.lastStalkTick >=
-                effectiveCooldown(StalkerConfig.stalkRollIntervalTicks(), overworld)) {
+        } else if (now - this.lastStalkTick >= effectiveCooldown(StalkerConfig.stalkRollIntervalTicks(), overworld)) {
             if (overworld.random.nextBoolean()) {
                 ServerPlayer target = randomPlayer(players, server);
                 if (target != null) {
-                    double distance = overworld.random.nextBoolean()
-                            ? StalkerConfig.DISTANT_STALK_DISTANCE.get()
-                            : StalkerConfig.CLOSE_STALK_DISTANCE.get();
+                    double distance = overworld.random.nextBoolean() ? StalkerConfig.DISTANT_STALK_DISTANCE.get() : StalkerConfig.CLOSE_STALK_DISTANCE.get();
                     UUID uuid = spawnStalk(target, getPlayerLevel(target, server), distance);
-                    if (uuid != null) {
-                        this.spawnedStalkUUID = uuid;
-                        this.stalkActive = true;
-                    }
+                    if (uuid != null) { this.spawnedStalkUUID = uuid; this.stalkActive = true; }
                 }
             }
             this.lastStalkTick = now;
         }
-    }
 
-    public void triggerDistantStalk(ServerPlayer player, ServerLevel level) {
-        spawnStalk(player, level, StalkerConfig.DISTANT_STALK_DISTANCE.get());
-    }
-
-    public void triggerCloseStalk(ServerPlayer player, ServerLevel level) {
-        spawnStalk(player, level, StalkerConfig.CLOSE_STALK_DISTANCE.get());
+        // КОШМАР (Проверка сна)
+        for (ServerPlayer player : players) {
+            if (player.isSleeping() && player.getSleepTimer() == 100 && player.level().random.nextFloat() < 0.15f) {
+                double angle = player.level().random.nextDouble() * Math.PI * 2.0;
+                StalkerEntity stalker = ModEntities.STALKER.get().create((Level) player.level());
+                if (stalker != null) {
+                    stalker.setupStalk(5); // Quadrupedal
+                    stalker.moveTo(player.getX() + Math.cos(angle) * 2, player.getY(), player.getZ() + Math.sin(angle) * 2, 0, 0);
+                    player.level().addFreshEntity(stalker);
+                    player.displayClientMessage(Component.literal("§4Ты слышишь скрежет когтей..."), false);
+                    player.stopSleeping();
+                }
+            }
+        }
     }
 
     public void triggerBehindScare(ServerPlayer player, ServerLevel level) {
@@ -140,9 +130,7 @@ public class StalkerEvents {
         if (stalker == null) return;
         stalker.setupBehindScare();
         stalker.moveTo(spawnX, player.getY(), spawnZ, level.random.nextFloat() * 360.0f, 0.0f);
-        stalker.finalizeSpawn(level,
-                level.getCurrentDifficultyAt(new BlockPos((int) spawnX, (int) player.getY(), (int) spawnZ)),
-                MobSpawnType.NATURAL, null, null);
+        stalker.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos((int) spawnX, (int) player.getY(), (int) spawnZ)), MobSpawnType.NATURAL, null, null);
         level.addFreshEntity(stalker);
     }
 
@@ -156,22 +144,16 @@ public class StalkerEvents {
         StalkerEntity stalker = ModEntities.STALKER.get().create(level);
         if (stalker == null) return null;
         stalker.setupChase(player);
-        stalker.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                level.random.nextFloat() * 360.0f, 0.0f);
-        stalker.finalizeSpawn(level, level.getCurrentDifficultyAt(pos),
-                MobSpawnType.NATURAL, null, null);
+        stalker.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, level.random.nextFloat() * 360.0f, 0.0f);
+        stalker.finalizeSpawn(level, level.getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
         level.addFreshEntity(stalker);
         return stalker.getUUID();
     }
 
     public void triggerBreakEvent(ServerPlayer player, ServerLevel level) {
-        SoundEvent[] options = {
-                ModSounds.BREAK_EVENT_1.get(), ModSounds.BREAK_EVENT_2.get(),
-                ModSounds.BREAK_EVENT_3.get(), ModSounds.BREAK_EVENT_4.get()
-        };
+        SoundEvent[] options = { ModSounds.BREAK_EVENT_1.get(), ModSounds.BREAK_EVENT_2.get(), ModSounds.BREAK_EVENT_3.get(), ModSounds.BREAK_EVENT_4.get() };
         SoundEvent chosen = options[level.random.nextInt(options.length)];
-        level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                chosen, SoundSource.AMBIENT, 1.0f, 1.0f);
+        level.playSound(null, player.getX(), player.getY(), player.getZ(), chosen, SoundSource.AMBIENT, 1.0f, 1.0f);
     }
 
     private ServerPlayer randomPlayer(List<ServerPlayer> players, MinecraftServer server) {
@@ -185,16 +167,12 @@ public class StalkerEvents {
     }
 
     private void playBreakEventToAll(List<ServerPlayer> players, ServerLevel overworld) {
-        SoundEvent[] options = {
-                ModSounds.BREAK_EVENT_1.get(), ModSounds.BREAK_EVENT_2.get(),
-                ModSounds.BREAK_EVENT_3.get(), ModSounds.BREAK_EVENT_4.get()
-        };
+        SoundEvent[] options = { ModSounds.BREAK_EVENT_1.get(), ModSounds.BREAK_EVENT_2.get(), ModSounds.BREAK_EVENT_3.get(), ModSounds.BREAK_EVENT_4.get() };
         SoundEvent chosen = options[overworld.random.nextInt(options.length)];
         for (ServerPlayer player : players) {
             Level level = player.level();
             ServerLevel sl = level instanceof ServerLevel s ? s : overworld;
-            sl.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    chosen, SoundSource.AMBIENT, 1.0f, 1.0f);
+            sl.playSound(null, player.getX(), player.getY(), player.getZ(), chosen, SoundSource.AMBIENT, 1.0f, 1.0f);
         }
     }
 
@@ -207,30 +185,46 @@ public class StalkerEvents {
         double spawnY = pos != null ? pos.getY() : player.getY();
         double finalX = pos != null ? pos.getX() + 0.5 : spawnX;
         double finalZ = pos != null ? pos.getZ() + 0.5 : spawnZ;
+
         StalkerEntity stalker = ModEntities.STALKER.get().create(level);
         if (stalker == null) return null;
-        stalker.setupStalk(level.random.nextInt(6) + 1);
+
+        int imageIndex = level.random.nextInt(6) + 1;
+        // Проверка: Quadrupedal (5) только под землёй или в дырках
+        if (imageIndex == 5) {
+            boolean isUnderground = !level.canSeeSky(player.blockPosition());
+            boolean isHoleNearby = checkHoleNearby(level, player.blockPosition());
+            if (!isUnderground && !isHoleNearby) {
+                imageIndex = level.random.nextBoolean() ? 1 : 4; // Меняем на Bipedal или Tormentor
+            }
+        }
+
+        stalker.setupStalk(imageIndex);
         stalker.moveTo(finalX, spawnY, finalZ, level.random.nextFloat() * 360.0f, 0.0f);
-        stalker.finalizeSpawn(level,
-                level.getCurrentDifficultyAt(new BlockPos((int) finalX, (int) spawnY, (int) finalZ)),
-                MobSpawnType.NATURAL, null, null);
+        stalker.finalizeSpawn(level, level.getCurrentDifficultyAt(new BlockPos((int) finalX, (int) spawnY, (int) finalZ)), MobSpawnType.NATURAL, null, null);
         level.addFreshEntity(stalker);
         return stalker.getUUID();
+    }
+
+    private boolean checkHoleNearby(ServerLevel level, BlockPos playerPos) {
+        for (BlockPos p : BlockPos.betweenClosed(playerPos.offset(-5, -3, -5), playerPos.offset(5, 3, 5))) {
+            if (!level.getBlockState(p).isAir()) continue;
+            if (!level.getBlockState(p.above()).isAir()) continue;
+            if (!level.getBlockState(p.below()).isAir()) return true;
+            if (level.getBlockState(p.above()).isAir() && level.getBlockState(p.above(2)).isAir()) return true;
+        }
+        return false;
     }
 
     private BlockPos findGround(ServerLevel level, double x, double startY, double z) {
         BlockPos base = new BlockPos((int) x, (int) startY, (int) z);
         for (int dy = 0; dy <= 16; dy++) {
             BlockPos pos = base.above(dy);
-            if (!level.isEmptyBlock(pos.below())
-                    && level.isEmptyBlock(pos)
-                    && level.isEmptyBlock(pos.above())) return pos;
+            if (!level.isEmptyBlock(pos.below()) && level.isEmptyBlock(pos) && level.isEmptyBlock(pos.above())) return pos;
         }
         for (int dy = 1; dy <= 16; dy++) {
             BlockPos pos = base.below(dy);
-            if (!level.isEmptyBlock(pos.below())
-                    && level.isEmptyBlock(pos)
-                    && level.isEmptyBlock(pos.above())) return pos;
+            if (!level.isEmptyBlock(pos.below()) && level.isEmptyBlock(pos) && level.isEmptyBlock(pos.above())) return pos;
         }
         return null;
     }
