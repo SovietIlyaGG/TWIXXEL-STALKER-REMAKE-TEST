@@ -16,7 +16,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.SpawnGroupData;
@@ -25,7 +24,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +51,6 @@ public class StalkerEntity extends PathfinderMob {
     private int timer = 0;
     private int chaseTeleportTimer = 0;
 
-    // НАШИ ХЕЛПЕРЫ
     private final StalkerDashHelper dashHelper = new StalkerDashHelper();
     private final StalkerBarricadeBreaker barricadeBreaker = new StalkerBarricadeBreaker();
     private final StalkerPeekHelper peekHelper = new StalkerPeekHelper();
@@ -105,7 +103,9 @@ public class StalkerEntity extends PathfinderMob {
     }
 
     public void setupChase(ServerPlayer target) {
-        this.entityData.set(IMAGE_INDEX, (byte) 5);
+        int[] chaseIndices = { 4, 6 };  // Tormentor
+        int randomIndex = chaseIndices[this.random.nextInt(chaseIndices.length)];
+        this.entityData.set(IMAGE_INDEX, (byte) randomIndex);
         this.entityData.set(IS_BEHIND_SCARE, false);
         this.entityData.set(IS_CHASE, true);
         this.chaseTarget = target;
@@ -135,10 +135,8 @@ public class StalkerEntity extends PathfinderMob {
     }
 
     private void tickStalk() {
-        // Ближайший игрок в радиусе 32 блоков — цель для AI
         Player nearby = this.level().getNearestPlayer(this, 32.0);
 
-        // Despawn если игрок ближе 3 блоков
         Player close = this.level().getNearestPlayer(this, StalkerConfig.STALK_PROXIMITY_DESPAWN.get());
         if (close != null) {
             close.addEffect(new MobEffectInstance(MobEffects.DARKNESS, 100, 0, false, false));
@@ -146,7 +144,6 @@ public class StalkerEntity extends PathfinderMob {
             return;
         }
 
-        // AI хелперы
         if (nearby != null) {
             dashHelper.tick(this, nearby);
             if (this.level() instanceof ServerLevel sl) {
@@ -154,13 +151,30 @@ public class StalkerEntity extends PathfinderMob {
             }
         }
 
-        // Ломание баррикад — если рядом дверь
+        // Ищем дверь рядом и назначаем целью
+        BlockPos doorPos = findNearbyDoor();
+        if (doorPos != null) {
+            barricadeBreaker.setTargetDoor(doorPos);
+        }
         barricadeBreaker.tick(this);
 
         ++this.timer;
         if (this.timer >= STALK_LIFETIME_TICKS) {
             this.discard();
         }
+    }
+
+    @Nullable
+    private BlockPos findNearbyDoor() {
+        BlockPos center = this.blockPosition();
+        for (BlockPos p : BlockPos.betweenClosed(
+                center.offset(-3, -1, -3),
+                center.offset(3, 2, 3))) {
+            if (this.level().getBlockState(p).getBlock() instanceof DoorBlock) {
+                return p.immutable();
+            }
+        }
+        return null;
     }
 
     private void tickBehindScare() {
@@ -258,4 +272,3 @@ public class StalkerEntity extends PathfinderMob {
     protected void dropExperience() {
     }
 }
-
