@@ -1,6 +1,5 @@
 package com.thestalker.entity;
 
-import java.util.concurrent.ConcurrentHashMap;
 import com.thestalker.StalkerConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -29,8 +28,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap; // ТУТ ДОБАВЛЕН ИМПОРТ
+import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap; // ВОТ ЭТА СТРОКА
 
 public class StalkerEntity extends PathfinderMob {
 
