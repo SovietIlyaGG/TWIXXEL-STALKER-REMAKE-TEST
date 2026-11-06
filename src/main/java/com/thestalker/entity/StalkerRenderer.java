@@ -24,6 +24,12 @@ public class StalkerRenderer extends EntityRenderer<StalkerEntity> {
     public ResourceLocation getTextureLocation(StalkerEntity entity) {
         int index = entity.getImageIndex();
         System.out.println("[StalkerRenderer] index = " + index);
+        
+        // Если он выглядывает из-за двери/дерева, меняем текстуру на Jumpscare (с раскинутыми руками)
+        if (entity.isPeeking() && index != 5) {
+            return new ResourceLocation("stalker", "textures/entity/stalkerjumpscare.png");
+        }
+
         if (index == 0) {
             return new ResourceLocation("stalker", "textures/entity/stalkerjumpscare.png");
         }
@@ -53,10 +59,38 @@ public class StalkerRenderer extends EntityRenderer<StalkerEntity> {
         poseStack.pushPose();
         poseStack.translate(0.0f, halfH, 0.0f);
 
+        // Поворот к камере (Billboard)
         Camera camera = this.entityRenderDispatcher.camera;
         poseStack.mulPose(Axis.YP.rotationDegrees(-camera.getYRot()));
         poseStack.mulPose(Axis.XP.rotationDegrees(camera.getXRot()));
         poseStack.translate(0.0f, -halfH, 0.0f);
+
+        // ==========================================
+        // АНИМАЦИЯ ВЫГЛЯДЫВАНИЯ И РУК
+        // ==========================================
+        if (entity.isPeeking()) {
+            if (entity.getImageIndex() == 5) {
+                // Quadrupedal выезжает снизу (из дырки)
+                poseStack.translate(0.0f, -0.5f, 0.0f);
+                poseStack.mulPose(Axis.XP.rotationDegrees(20.0f));
+                poseStack.scale(0.9f, 0.9f, 0.9f);
+            } else {
+                // Bipedal / Tormentor выглядывают из-за двери или дерева
+                
+                // 1. Сдвигаем вбок (прячется за косяком)
+                poseStack.translate(0.3f, 0.0f, 0.0f);
+                
+                // 2. Наклоняем (заглядывает из-за угла)
+                poseStack.mulPose(Axis.ZP.rotationDegrees(-20.0f)); // Наклон вбок
+                poseStack.mulPose(Axis.XP.rotationDegrees(10.0f));  // Наклон вперед
+                
+                // 3. Растягиваем (эффект длинных рук)
+                poseStack.scale(1.3f, 1.1f, 1.0f); 
+                
+                // 4. Выдвигаем вперед (эффект 3D)
+                poseStack.translate(0.0f, 0.0f, 0.2f);
+            }
+        }
 
         Matrix4f pose = poseStack.last().pose();
         Matrix3f normal = poseStack.last().normal();
