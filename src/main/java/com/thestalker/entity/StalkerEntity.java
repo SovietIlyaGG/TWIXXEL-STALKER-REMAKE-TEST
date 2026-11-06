@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap; // ВОТ ЭТА СТРОКА
+import java.util.concurrent.ConcurrentHashMap;
 
 public class StalkerEntity extends PathfinderMob {
 
@@ -55,6 +55,9 @@ public class StalkerEntity extends PathfinderMob {
     @Nullable
     private Vec3 lastKnownPlayerPos = null;
     private int memoryTimer = 0;
+    
+    // ФЛАГ ДЛЯ ВЫГЛЯДЫВАНИЯ
+    private boolean isPeeking = false;
 
     private final StalkerDashHelper dashHelper = new StalkerDashHelper();
     private final StalkerBarricadeBreaker barricadeBreaker = new StalkerBarricadeBreaker();
@@ -86,6 +89,10 @@ public class StalkerEntity extends PathfinderMob {
     public boolean isBehindScare() { return this.entityData.get(IS_BEHIND_SCARE); }
     public boolean isChase() { return this.entityData.get(IS_CHASE); }
     public StalkerKind getStalkerKind() { return StalkerKind.fromImageIndex(getImageIndex()); }
+
+    // ГЕТТЕР И СЕТТЕР ДЛЯ ВЫГЛЯДЫВАНИЯ
+    public void setPeeking(boolean peeking) { this.isPeeking = peeking; }
+    public boolean isPeeking() { return this.isPeeking; }
 
     public void setupStalk(int imageIndex) {
         this.entityData.set(IMAGE_INDEX, (byte) imageIndex);
@@ -144,7 +151,11 @@ public class StalkerEntity extends PathfinderMob {
             }
 
             dashHelper.tick(this, nearby);
-            if (this.level() instanceof ServerLevel sl) peekHelper.tick(this, sl);
+            
+            // ВЫЗОВ ВЫГЛЯДЫВАНИЯ
+            if (this.level() instanceof ServerLevel sl) {
+                peekHelper.tick(this, sl);
+            }
 
             if (actionCooldown == 0 && this.distanceTo(nearby) < 15) {
                 doCreepyActions(nearby);
