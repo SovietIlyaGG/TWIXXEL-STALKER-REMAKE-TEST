@@ -11,26 +11,27 @@ public class StalkerPeekHelper {
     private static final int PEEK_COOLDOWN = 200;
 
     private int peekCooldown = 0;
-    private boolean peeking = false;
-    private BlockPos peekBlock = null;
 
     public void tick(StalkerEntity stalker, ServerLevel level) {
+        // Если таймер выглядывания еще идет
         if (peekCooldown > 0) {
             peekCooldown--;
             if (peekCooldown == 0) {
-                peeking = false;
-                peekBlock = null;
+                // Время вышло, выключаем анимацию
+                stalker.setPeeking(false);
             }
             return;
         }
 
         StalkerKind kind = stalker.getStalkerKind();
 
+        // Если это Bipedal или Tormentor (умеют выглядывать из деревьев/дверей)
         if (kind.canPeekFromTrees()) {
             tryPeekFromTree(stalker, level);
             return;
         }
 
+        // Если это Quadrupedal (умеет выглядывать из дырок)
         if (kind.canPeekFromHoles()) {
             tryPeekFromHole(stalker, level);
         }
@@ -43,9 +44,15 @@ public class StalkerPeekHelper {
                 center.offset( PEEK_RADIUS,  2,  PEEK_RADIUS))) {
 
             BlockState state = level.getBlockState(p);
+            // Ищем бревна или листву (деревья)
             if (state.is(BlockTags.LOGS) || state.is(BlockTags.LEAVES)) {
-                peeking = true;
-                peekBlock = p.immutable();
+                
+                // ВКЛЮЧАЕМ АНИМАЦИЮ
+                stalker.setPeeking(true);
+                
+                // Телепортируем его за дерево (чтобы он реально прятался)
+                stalker.teleportTo(p.getX() + 0.5, p.getY(), p.getZ() + 0.5);
+                
                 peekCooldown = PEEK_COOLDOWN;
                 return;
             }
@@ -62,24 +69,10 @@ public class StalkerPeekHelper {
             if (!level.getBlockState(p.above()).isAir()) continue;
             if (level.getBlockState(p.below()).isAir()) continue;
 
-            peeking = true;
-            peekBlock = p.immutable();
+            // ВКЛЮЧАЕМ АНИМАЦИЮ ДЛЯ QUADRUPEDAL
+            stalker.setPeeking(true);
             peekCooldown = PEEK_COOLDOWN;
             return;
         }
-    }
-
-    public boolean isPeeking() {
-        return peeking;
-    }
-
-    public BlockPos getPeekBlock() {
-        return peekBlock;
-    }
-
-    public void reset() {
-        peeking = false;
-        peekBlock = null;
-        peekCooldown = 0;
     }
 }
