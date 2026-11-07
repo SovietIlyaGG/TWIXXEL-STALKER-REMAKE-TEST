@@ -10,69 +10,68 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class StalkerBarricadeBreaker {
 
-    private static final int BREAK_COOLDOWN = 10; // Раз в 0.5 сек
+    private static final int BREAK_COOLDOWN = 10;
 
     private int cooldown = 0;
-    private BlockPos targetDoor = null;
-    private boolean doorBroken = false;
+    private BlockPos targetBlock = null;
+    private boolean blockBroken = false;
 
     public void tick(StalkerEntity stalker) {
         if (!(stalker.level() instanceof ServerLevel level)) return;
-        if (targetDoor == null) return;
+        if (targetBlock == null) return;
 
         if (cooldown > 0) {
             cooldown--;
             return;
         }
 
-        BlockState doorState = level.getBlockState(targetDoor);
-        if (!(doorState.getBlock() instanceof DoorBlock)) {
-            clearTarget();
+        BlockState state = level.getBlockState(targetBlock);
+
+        // 1. Если это дверь — ломаем её
+        if (state.getBlock() instanceof DoorBlock) {
+            if (!blockBroken) {
+                // Включаем анимацию выглядывания перед тем, как сломать
+                stalker.setPeeking(true);
+                
+                level.playSound(null, targetBlock, ModSounds.BREAK_EVENT_4.get(), SoundSource.HOSTILE, 1.0f, 0.8f);
+                level.destroyBlock(targetBlock, true, stalker);
+                level.playSound(null, targetBlock, ModSounds.BREAK_EVENT_3.get(), SoundSource.HOSTILE, 1.0f, 0.9f);
+                
+                blockBroken = true;
+                cooldown = BREAK_COOLDOWN;
+                
+                // Через секунду выключаем выглядывание, чтобы он зашел
+                stalker.setPeeking(false); 
+            }
             return;
         }
 
-        // Ищем блок прямо перед дверью (с той стороны, откуда идет сталкер)
-        Direction stalkerDir = stalker.getDirection();
-        BlockPos blockInFront = targetDoor.relative(stalkerDir);
-        BlockState frontState = level.getBlockState(blockInFront);
-
-        // Если перед дверью стоит блок (баррикада) — ломаем его
-        if (!frontState.isAir() && !(frontState.getBlock() instanceof DoorBlock)) {
-            level.destroyBlock(blockInFront, true, stalker);
-            level.playSound(null, blockInFront,
-                    ModSounds.BREAK_EVENT_2.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.9f);
-            cooldown = BREAK_COOLDOWN;
-            return;
-        }
-
-        // Блоков нет — ломаем саму дверь
-        if (!doorBroken) {
-            // Стук
-            level.playSound(null, targetDoor,
-                    ModSounds.BREAK_EVENT_4.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.8f);
-            
-            // Ломание
-            level.destroyBlock(targetDoor, true, stalker);
-            level.playSound(null, targetDoor,
-                    ModSounds.BREAK_EVENT_3.get(),
-                    SoundSource.HOSTILE, 1.0f, 0.9f);
-            
-            doorBroken = true;
-            cooldown = BREAK_COOLDOWN;
+        // 2. Если это блок перед дверью (баррикада) — ломаем его
+        if (!state.isAir() && !(state.getBlock() instanceof DoorBlock)) {
+            if (!blockBroken) {
+                // Тоже включаем анимацию, как будто он выглядывает из-за блока
+                stalker.setPeeking(true);
+                
+                level.destroyBlock(targetBlock, true, stalker);
+                level.playSound(null, targetBlock, ModSounds.BREAK_EVENT_2.get(), SoundSource.HOSTILE, 1.0f, 0.9f);
+                
+                blockBroken = true;
+                cooldown = BREAK_COOLDOWN;
+                
+                stalker.setPeeking(false);
+            }
         }
     }
 
-    public void setTargetDoor(BlockPos pos) {
-        this.targetDoor = pos;
-        this.doorBroken = false;
+    public void setTargetBlock(BlockPos pos) {
+        this.targetBlock = pos;
+        this.blockBroken = false;
         this.cooldown = 0;
     }
 
     public void clearTarget() {
-        this.targetDoor = null;
-        this.doorBroken = false;
+        this.targetBlock = null;
+        this.blockBroken = false;
         this.cooldown = 0;
     }
 }
